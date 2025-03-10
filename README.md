@@ -30,7 +30,7 @@ This approach is computationally efficient because the solution path is piecewis
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/lasso-homotopy.git
+git clone https://github.com/myxiaosanzhixiong/lasso-homotopy.git
 cd lasso-homotopy
 ```
 
