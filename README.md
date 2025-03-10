@@ -1,3 +1,15 @@
+
+Illinois Institute of Technology
+
+Name:Jian Zhang
+CWID:A20467790
+
+Name:Hisham Mohammed 
+Cwid:A20584812
+
+Name: Manthan Surjuse
+Cwid: A20588887
+
 # LASSO Regression with Homotopy Method
 
 This repository implements the LASSO (Least Absolute Shrinkage and Selection Operator) regression technique using the Homotopy method. The implementation follows the approach described in ["LASSO Optimization via the Homotopy Method"](https://people.eecs.berkeley.edu/~elghaoui/Pubs/hom_lasso_NIPS08.pdf) by Asif and Romberg.
