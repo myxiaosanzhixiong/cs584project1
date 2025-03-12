@@ -10,6 +10,9 @@ Cwid:A20584812
 Name: Manthan Surjuse
 Cwid: A20588887
 
+#Test Result 
+<img width="1362" alt="Screenshot 2025-03-12 at 4 07 07 PM" src="https://github.com/user-attachments/assets/6983b4d3-04d4-4744-a864-35a0480d532d" />
+
 # LASSO Regression with Homotopy Method
 
 This repository implements the LASSO (Least Absolute Shrinkage and Selection Operator) regression technique using the Homotopy method. The implementation follows the approach described in ["LASSO Optimization via the Homotopy Method"](https://people.eecs.berkeley.edu/~elghaoui/Pubs/hom_lasso_NIPS08.pdf) by Asif and Romberg.
