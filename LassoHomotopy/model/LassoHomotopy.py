@@ -1,54 +1,21 @@
 import numpy as np
+from scipy import linalg
 
 class LassoHomotopyModel():
     """
     Implementation of LASSO regression using the Homotopy method.
-    
-    The Homotopy method computes the entire regularization path for LASSO,
-    efficiently finding solutions for all values of the regularization parameter lambda.
-    
-    References:
-    - "Homotopy Path Following for the LASSO" by Osborne et al.
-    - "LASSO Optimization via the Homotopy Method" by Asif and Romberg
     """
     
-    def __init__(self, max_iter=1000, tol=1e-6, lambda_max=None, lambda_min_ratio=1e-3):
-        """
-        Initialize the LASSO Homotopy model.
-        
-        Parameters:
-        -----------
-        max_iter : int
-            Maximum number of iterations for the homotopy path
-        tol : float
-            Tolerance for convergence
-        lambda_max : float, optional
-            Maximum value of regularization parameter
-        lambda_min_ratio : float
-            Ratio of lambda_min/lambda_max where the path ends
-        """
+    def __init__(self, max_iter=1000, tol=1e-6, lambda_max=None, lambda_min_ratio=1e-6):
+        """Initialize the LASSO Homotopy model."""
         self.max_iter = max_iter
         self.tol = tol
         self.lambda_max = lambda_max
         self.lambda_min_ratio = lambda_min_ratio
 
     def fit(self, X, y):
-        """
-        Fit the LASSO model using the Homotopy method.
-        
-        Parameters:
-        -----------
-        X : array-like, shape (n_samples, n_features)
-            Training data
-        y : array-like, shape (n_samples, 1) or (n_samples,)
-            Target values
-            
-        Returns:
-        --------
-        results : LassoHomotopyResults
-            Object containing the results and trained model
-        """
-        # Convert inputs to numpy arrays and handle different input shapes
+        """Fit the LASSO model using the Homotopy method."""
+        # Convert inputs to numpy arrays
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.float64)
         
@@ -74,6 +41,10 @@ class LassoHomotopyModel():
         active_set = []
         active_signs = []
         
+        # Store lambda and coefficient path
+        lambda_path = [lambda_current]
+        coef_path = [beta.copy()]
+        
         # Homotopy algorithm
         for iteration in range(self.max_iter):
             # Compute residual
@@ -94,13 +65,16 @@ class LassoHomotopyModel():
             
             # Calculate direction using active set
             signs = np.array(active_signs)
-            X_active_signs = X_active * signs.reshape(1, -1)
             
-            # Compute the direction using matrix operations
             try:
-                # Try using the normal equations
+                # Use more robust matrix computation with SVD
                 gram_matrix = X_active.T @ X_active
-                inverse_gram = np.linalg.inv(gram_matrix)
+                
+                # Add small regularization term for numerical stability
+                gram_matrix += np.eye(gram_matrix.shape[0]) * self.tol
+                
+                # Use pseudoinverse for more stability
+                inverse_gram = linalg.pinv(gram_matrix)
                 direction = inverse_gram @ signs
                 
                 # Compute the direction in the feature space
@@ -115,14 +89,14 @@ class LassoHomotopyModel():
                 lambda_gamma = []
                 for j in range(n_features):
                     if j not in active_set:
-                        if abs(delta_correlation[j]) > 0:
-                            gamma = (lambda_current - correlation[j]) / (delta_correlation[j])
-                            if gamma > 0:
-                                lambda_gamma.append((gamma, j, 1))  # 1 means add to active set
+                        if abs(delta_correlation[j]) > self.tol:  # Threshold to avoid numerical issues
+                            gamma1 = (lambda_current - correlation[j]) / (delta_correlation[j])
+                            if gamma1 > 0:
+                                lambda_gamma.append((gamma1, j, 1))  # 1 means add to active set
                             
-                            gamma = (lambda_current + correlation[j]) / (delta_correlation[j])
-                            if gamma > 0:
-                                lambda_gamma.append((gamma, j, -1))  # -1 means add with negative sign
+                            gamma2 = (lambda_current + correlation[j]) / (delta_correlation[j])
+                            if gamma2 > 0:
+                                lambda_gamma.append((gamma2, j, -1))  # -1 means add with negative sign
                 
                 # Calculate step size for variables to leave active set
                 beta_gamma = []
@@ -133,83 +107,73 @@ class LassoHomotopyModel():
                             beta_gamma.append((gamma, i, 0))  # 0 means remove from active set
                 
                 # Combine and sort step sizes
-                if not lambda_gamma and not beta_gamma:
-                    break  # No more events, exit
-                
                 gamma_list = lambda_gamma + beta_gamma
                 if not gamma_list:
-                    break
-                
-                min_gamma, min_idx, min_type = min(gamma_list)
-                
-                # Update beta
-                beta += min_gamma * delta_beta
-                
-                # Update lambda
-                lambda_current -= min_gamma
-                
-                # Update active set
-                if min_type == 0:  # Remove from active set
-                    i_remove = min_idx
-                    idx_remove = active_set[i_remove]
-                    beta[idx_remove] = 0  # Zero out coefficient
+                    # No more events, try a small step and check convergence
+                    small_step = lambda_current * 0.1
+                    beta_new = beta + small_step * delta_beta
+                    if np.max(np.abs(beta_new - beta)) < self.tol:
+                        break  # Converged
+                    else:
+                        lambda_current -= small_step
+                        beta = beta_new
+                else:
+                    min_gamma, min_idx, min_type = min(gamma_list)
                     
-                    # Remove from active set and signs
-                    active_set.pop(i_remove)
-                    active_signs.pop(i_remove)
+                    # Update beta
+                    beta += min_gamma * delta_beta
                     
-                elif min_type in [1, -1]:  # Add to active set
-                    j_add = min_idx
-                    active_set.append(j_add)
-                    active_signs.append(min_type)
+                    # Update lambda
+                    lambda_current -= min_gamma
+                    
+                    # Update active set
+                    if min_type == 0:  # Remove from active set
+                        i_remove = min_idx
+                        idx_remove = active_set[i_remove]
+                        beta[idx_remove] = 0  # Zero out coefficient
+                        
+                        # Remove from active set and signs
+                        active_set.pop(i_remove)
+                        active_signs.pop(i_remove)
+                        
+                    elif min_type in [1, -1]:  # Add to active set
+                        j_add = min_idx
+                        active_set.append(j_add)
+                        active_signs.append(min_type)
+                
+                # Store current lambda and coefficients
+                lambda_path.append(lambda_current)
+                coef_path.append(beta.copy())
                 
                 # Check if lambda is small enough to terminate
                 if lambda_current <= lambda_min:
                     break
                     
-            except np.linalg.LinAlgError:
-                # If matrix inversion fails, handle the error
+            except (np.linalg.LinAlgError, ValueError) as e:
+                print(f"Matrix computation error: {e}")
+                # If computation fails, use current beta and terminate
                 break
         
         # Store results
         self.coef_ = beta
         self.active_set_ = active_set
-        self.lambda_path_ = np.array([lambda_current])
+        self.lambda_path_ = np.array(lambda_path)
+        self.coef_path_ = np.array(coef_path)
         
         return LassoHomotopyResults(self)
 
 class LassoHomotopyResults():
-    """
-    Class to store the results from LASSO Homotopy model fitting.
-    Provides methods for prediction and accessing model parameters.
-    """
+    """Class to store the results from LASSO Homotopy model fitting."""
     
     def __init__(self, model):
-        """
-        Initialize with model parameters.
-        
-        Parameters:
-        -----------
-        model : LassoHomotopyModel
-            The fitted LASSO Homotopy model
-        """
+        """Initialize with model parameters."""
         self.coef_ = model.coef_
         self.active_set_ = model.active_set_
         self.lambda_path_ = model.lambda_path_
+        if hasattr(model, 'coef_path_'):
+            self.coef_path_ = model.coef_path_
     
     def predict(self, X):
-        """
-        Predict using the fitted LASSO model.
-        
-        Parameters:
-        -----------
-        X : array-like, shape (n_samples, n_features)
-            Samples.
-            
-        Returns:
-        --------
-        y_pred : array, shape (n_samples,)
-            Returns predicted values.
-        """
+        """Predict using the fitted LASSO model."""
         X = np.asarray(X)
         return X @ self.coef_
