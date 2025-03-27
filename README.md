@@ -10,8 +10,6 @@ Cwid:A20584812
 Name: Manthan Surjuse
 Cwid: A20588887
 
-#Test Result 
-<img width="1362" alt="Screenshot 2025-03-12 at 4 07 07 PM" src="https://github.com/user-attachments/assets/6983b4d3-04d4-4744-a864-35a0480d532d" />
 
 # LASSO Regression Using Homotopy Method
 
@@ -110,6 +108,10 @@ pytest
 ```
 
 The test suite includes tests on small datasets, collinear data, different regularization strengths, and more.
+
+#test result
+<img width="1406" alt="Screenshot 2025-03-27 at 6 10 00 PM" src="https://github.com/user-attachments/assets/f4a292e8-4818-4744-bd1f-5bd3e3e50301" />
+
 
 ## Project Questions
 
