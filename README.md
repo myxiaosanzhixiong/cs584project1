@@ -36,7 +36,7 @@ Since the solution path is piecewise linear, this approach allows for exact comp
 
 ```bash
 # Clone the repository
-git clone [https://github.com/myxiaosanzhixiong/lasso-homotopy.git](https://github.com/myxiaosanzhixiong/cs584project1/edit/main/README.md)
+git clone [https://github.com/myxiaosanzhixiong/lasso-homotopy.git]
 cd lasso-homotopy
 
 # Create and activate virtual environment
