@@ -100,7 +100,7 @@ class LassoHomotopyModel():
             self.lambda_max = np.max(correlation)
 
         if self.lambda_max <= 0:
-            raise ValueError("lambda_max必须为正值，得到 {}".format(self.lambda_max))
+            raise ValueError("lambda_max must be positive, got {}".format(self.lambda_max))
 
         # 初始化lambda和活动集
         lambda_current = self.lambda_max
@@ -302,13 +302,13 @@ class LassoHomotopyResults():
         """返回模型的摘要信息"""
         active_coeffs = [(i, self.coef_[i]) for i in self.active_set_]
 
-        print("LASSO Homotopy 模型摘要:")
-        print(f"活动特征数量: {len(self.active_set_)}/{len(self.coef_)}")
-        print(f"最终lambda值: {self.lambda_path_[-1]:.6f}")
-        print(f"截距: {self.intercept_:.6f}")
-        print("\n活动系数:")
+        print("LASSO Homotopy Model Summary:")
+        print(f"Active features: {len(self.active_set_)}/{len(self.coef_)}")
+        print(f"Final lambda value: {self.lambda_path_[-1]:.6f}")
+        print(f"Intercept: {self.intercept_:.6f}")
+        print("\nActive coefficients:")
         for idx, coef in active_coeffs:
-            print(f"特征 {idx}: {coef:.6f}")
+            print(f"Feature {idx}: {coef:.6f}")
 
         return {
             "active_features": len(self.active_set_),
